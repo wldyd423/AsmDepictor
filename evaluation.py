@@ -41,7 +41,7 @@ def jac_accuracy(gold_sentence, pred_sentence):
     return n_correct/n_word
 
 if __name__ == "__main__":
-    hypothesis = open('./predicted_output/hypothesis_list.txt', mode='r', encoding='utf-8').read().split('\n')
+    hypothesis = open('./predicted_output/prediction.txt', mode='r', encoding='utf-8').read().split('\n')
     reference = open('./predicted_output/ground_truth.txt', mode='r', encoding='utf-8').read().split('\n')
     reference = [i.split('\t') for i in reference]
 

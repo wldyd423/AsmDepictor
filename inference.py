@@ -45,7 +45,7 @@ class Inference():
         
         output_tensor = translator.translate_sentence(input_tensor)
         predict_sentence = ' '.join(self.text_vocab.itos[idx] for idx in output_tensor)
-        predict_sentence = predict_sentence.replace('<sos>', '').replace('<eos>', '')
+        predict_sentence = predict_sentence.replace('<sos> ', '').replace(' <eos>', '')
         return predict_sentence
         
     def sentence_to_tensor(self, sentence):
@@ -63,7 +63,7 @@ class Inference():
     
     def save_hypothesis_list(self):
         print("Saving hypothesis list...")
-        with open("./predicted_output/hypothesis_list.txt", mode='w', encoding='utf-8') as f:
+        with open("./predicted_output/prediction.txt", mode='w', encoding='utf-8') as f:
             for hypothesis in self.hypothesis_list:
                 f.write(hypothesis + '\n')
         
@@ -90,7 +90,7 @@ if __name__ == "__main__":
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     max_token_seq_len = 300
-    
+    print(device)
     
     src_pad_idx = code_vocab.stoi['<pad>']
     src_vocab_size = len(code_vocab.stoi)

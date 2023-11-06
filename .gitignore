@@ -12,3 +12,5 @@
 *.i64
 __pycache__
 *.pt
+target_binary
+binaries_to_test

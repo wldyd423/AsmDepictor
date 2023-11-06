@@ -5,13 +5,13 @@ from capstone import *
 from tqdm import tqdm
 
 class Dump():
-    def __init__(self, binary_name, dmp_path, bin_info):
+    def __init__(self, binary_name, dmp_path):
         self.dmp_path = dmp_path
         self.binary_name = binary_name
         
         self.funcs = util.load_from_dmp(self.dmp_path)
-        self.bin_info = bin_info
-        # print(tmp)
+        print(binary_name)
+        # print(self.funcs)
         
         self.md = Cs(CS_ARCH_X86, CS_MODE_64)
         self.func_dict = dict()
@@ -20,9 +20,9 @@ class Dump():
    
     def build_text(self):
         f_addrs = sorted(self.funcs.keys())
-        F_prev = None
+        # print(f_addrs)
         
-        bar = util.ProgressBar(len(f_addrs), name="Creating Plain Text...: " + self.bin_info.bin_name)
+        # bar = util.ProgressBar(len(f_addrs), name="Creating Plain Text...:")
         for f_idx, f_addr in enumerate(f_addrs):
             F = self.funcs[f_addr]
             # print(F)
@@ -53,12 +53,12 @@ class Dump():
                         instruction = instruction.replace(' ', '_')
                         # print(instruction)
                         self.func_dict[F.name].append(instruction)
-            bar += 1
-        with open("./dataset/test_source.txt", mode='w', encoding='utf-8') as f:
+            # bar += 1
+        with open("./dataset/plain_source.txt", mode='a', encoding='utf-8') as f:
             for func in tqdm(self.func_dict):
-                f.write(','.join(self.func_dict[func]) + '\n')
+                f.write(', '.join(self.func_dict[func]) + '\n')
         
-        with open("./dataset/test_target.txt", mode='w', encoding='utf-8') as f:
+        with open("./dataset/test_target.txt", mode='a', encoding='utf-8') as f:
             for func in tqdm(self.func_dict):
                 name = func.replace("__", "")
                 name = name.replace("_", " ")
@@ -70,15 +70,17 @@ class Dump():
             
                         
 
-def parse(binname):
-    # print(binname)
-    tmp, _, _, _ = binname.split('__')
-    compiler, optlevel = tmp.split('-')
-    # print(compiler, optlevel)
-    return compiler, optlevel
+
 
 if __name__ == "__main__":
-    binary_dir = "./sample_binary"
+    # delete ./dataset/test_source.txt and ./dataset/test_target.txt at start
+    if os.path.exists("./dataset/plain_source.txt"):
+        os.remove("./dataset/plain_source.txt")
+    if os.path.exists("./dataset/test_source.txt"):
+        os.remove("./dataset/test_source.txt")
+    if os.path.exists("./dataset/test_target.txt"):
+        os.remove("./dataset/test_target.txt")
+    binary_dir = "./target_binary"
     
     for root, dirs, files in os.walk(binary_dir):
         for file in files:
@@ -87,12 +89,12 @@ if __name__ == "__main__":
             binname, ext = os.path.splitext(file)
             if ext == '.gz':
                 binname, _ = os.path.splitext(binname)
-                # print(binname, file)
-                compiler, optlevel = parse(binname)
-                bin_info = unit.Binary_Info(os.path.join(root, binname))
-                bin_info.compiler_info_label = compiler
-                bin_info.opt_level_label = optlevel
-                Dump(binname, os.path.join(root, file), bin_info)
+                print(binname, file)
+                Dump(binname, os.path.join(root, file))
                 
-                
+    ## run bpe
+    # cmd: subword-nmt apply-bpe --codes ../vocab/pretrained_bpe_voca.voc --input ./dataset/plain_source.txt --output ./dataset/test_source.txt
+    
+    # os.system("subword-nmt apply-bpe --codes ../vocab/pretrained_bpe_voca.voc --input ./dataset/plain_source.txt --output ./dataset/test_source.txt")
+    os.system("subword-nmt apply-bpe --codes ./vocab/pretrained_bpe_voca.voc --input ./ida_preprocessing/dataset/plain_source.txt --output ./dataset/test_source.txt")
                 

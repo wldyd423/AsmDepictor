@@ -8,7 +8,7 @@ import torch
 import json
 import os
 
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+# os.environ["CUDA_VISIBLE_DEVICES"]="1"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 max_token_seq_len = 300
 
@@ -29,26 +29,26 @@ def make_a_hypothesis_transformer(model, src, tgt):
         model=model,
         beam_size=5,
         max_seq_len=max_token_seq_len+3,
-        src_pad_idx=code.vocab.stoi['<pad>'],
-        trg_pad_idx=text.vocab.stoi['<pad>'],
-        trg_bos_idx=text.vocab.stoi['<sos>'],
-        trg_eos_idx=text.vocab.stoi['<eos>']).to(device)
+        src_pad_idx=code.stoi['<pad>'],
+        trg_pad_idx=text.stoi['<pad>'],
+        trg_bos_idx=text.stoi['<sos>'],
+        trg_eos_idx=text.stoi['<eos>']).to(device)
 
     output_tensor = translator.translate_sentence(input_tensor)
     removed_sos_eos = output_tensor[1:-1].copy()
-    predict_sentence = ' '.join(text.vocab.itos[idx] for idx in output_tensor)
+    predict_sentence = ' '.join(text.itos[idx] for idx in output_tensor)
     predict_sentence = predict_sentence.replace('<sos>', '').replace('<eos>', '')
     return predict_sentence
 
 def sentence_to_tensor(sentence, model_type, src_or_tgt):
     if model_type == 'transformer':
         sentence = tokenize(sentence)
-        unk_idx = code.vocab.stoi[code.unk_token]
-        pad_idx = code.vocab.stoi[code.pad_token]
-        sentence_idx = [code.vocab.stoi.get(i, unk_idx) for i in sentence]
+        unk_idx = code.stoi['<unk>']
+        pad_idx = code.stoi['<pad>']
+        sentence_idx = [code.stoi.get(i, unk_idx) for i in sentence]
 
         for i in range(max_token_seq_len-len(sentence_idx)):
-            sentence_idx.append(code.vocab.stoi.get(i, pad_idx))
+            sentence_idx.append(code.stoi.get(i, pad_idx))
 
         sentence_tensor = torch.tensor(sentence_idx).to(device)
         sentence_tensor = sentence_tensor.unsqueeze(0)
@@ -72,47 +72,51 @@ def preprocessing(src_file, tgt_file, max_token_seq_len):
     return df
 
 if __name__ == "__main__":
-    train_json_dir = './dataset/1_train.json'
-    test_json_dir = './dataset/test_100.json'
+    print(device)
+    train_json_dir = './dataset/train.json'
+    test_json_dir = './dataset/test.json'
     model_path = './dataset/asmdepictor_pretrained.param'
 
     global tokenize
     tokenize = lambda x : x.split()
 
-    code = Field(sequential=True, 
-                use_vocab=True, 
-                tokenize=tokenize, 
-                lower=True,
-                pad_token='<pad>',
-                fix_length=max_token_seq_len)
+    # code = Field(sequential=True, 
+    #             use_vocab=True, 
+    #             tokenize=tokenize, 
+    #             lower=True,
+    #             pad_token='<pad>',
+    #             fix_length=max_token_seq_len)
 
-    text = Field(sequential=True, 
-                use_vocab=True, 
-                tokenize=tokenize, 
-                lower=True,
-                init_token='<sos>',
-                eos_token='<eos>',
-                pad_token='<pad>',
-                fix_length=max_token_seq_len)
+    # text = Field(sequential=True, 
+    #             use_vocab=True, 
+    #             tokenize=tokenize, 
+    #             lower=True,
+    #             init_token='<sos>',
+    #             eos_token='<eos>',
+    #             pad_token='<pad>',
+    #             fix_length=max_token_seq_len)
 
-    fields = {'Code' : ('code', code), 'Text' : ('text', text)}
+    # fields = {'Code' : ('code', code), 'Text' : ('text', text)}
 
-    train_data, test_data = TabularDataset.splits(path='',
-                                                train=train_json_dir,
-                                                test=test_json_dir,
-                                                format='json',
-                                                fields=fields)
+    # train_data, test_data = TabularDataset.splits(path='',
+    #                                             train=train_json_dir,
+    #                                             test=test_json_dir,
+    #                                             format='json',
+    #                                             fields=fields)
 
     # share train & tgt word2idx
-    code.build_vocab(train_data.code, train_data.text, min_freq=2)
-    text.build_vocab(train_data.code, train_data.text, min_freq=0)
+    # code.build_vocab(train_data.code, train_data.text, min_freq=2)
+    # text.build_vocab(train_data.code, train_data.text, min_freq=0)
+    
+    code = torch.load('./dataset/code_vocab.pt')
+    text = torch.load('./dataset/text_vocab.pt')
 
-    train_iterator, test_iterator = BucketIterator.splits(
-        (train_data, test_data),
-        batch_size=90,
-        device = "cuda",
-        sort=False
-    )
+    # train_iterator, test_iterator = BucketIterator.splits(
+    #     (train_data, test_data),
+    #     batch_size=90,
+    #     device = "cuda",
+    #     sort=False
+    # )
 
     # model
     batch_size=90
@@ -128,10 +132,10 @@ if __name__ == "__main__":
     proj_share_weight=True
     scale_emb_or_prj='emb'
 
-    src_pad_idx=code.vocab.stoi['<pad>']
-    src_vocab_size=len(code.vocab.stoi)
-    trg_pad_idx=text.vocab.stoi['<pad>']
-    trg_vocab_size=len(text.vocab.stoi)
+    src_pad_idx=code.stoi['<pad>']
+    src_vocab_size=len(code.stoi)
+    trg_pad_idx=text.stoi['<pad>']
+    trg_vocab_size=len(text.stoi)
 
     model = Asmdepictor.Asmdepictor(src_vocab_size,
                                     trg_vocab_size,

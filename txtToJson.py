@@ -47,8 +47,8 @@ if __name__=="__main__":
     
     # TxtToJson(train_src_dir, train_target_dir, max_tok_seq_len, json_path="./dataset/train.json")
     
-    src_dir = "./dataset/test_bpe_source.txt"
-    target_dir = "./dataset/test_bpe_target.txt"
+    src_dir = "./ida_preprocessing/dataset/test_source.txt"
+    target_dir = "./ida_preprocessing/dataset/test_target.txt"
     max_tok_seq_len = 300
     
     TxtToJson(src_dir, target_dir, max_tok_seq_len, json_path="./dataset/test.json")
